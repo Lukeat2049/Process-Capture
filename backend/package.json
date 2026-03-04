@@ -1,8 +1,9 @@
 {
+  "name": "process-capture",{
   "name": "process-capture",
   "version": "1.0.0",
   "scripts": {
-    "build": "cd frontend && npm install --include=dev && npm run build && cd ../backend && npm install",
+    "build": "npm install --prefix backend && npm install --include=dev --prefix frontend && npm run --prefix frontend build",
     "start": "node backend/src/server.js"
   },
   "engines": {
