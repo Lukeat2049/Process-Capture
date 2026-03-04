@@ -6,17 +6,14 @@ export default function Navbar() {
   return (
     <nav className="navbar">
       <div className="navbar-brand">
-        <Link to="/">ProcessCapture</Link>
+        <Link to="/">Playbook</Link>
       </div>
       <div className="navbar-links">
-        <Link to="/" className={pathname === '/' ? 'active' : ''}>
-          Home
-        </Link>
         <Link to="/dashboard" className={pathname === '/dashboard' ? 'active' : ''}>
-          My Workflows
+          My Library
         </Link>
         <Link to="/create" className="btn btn-primary btn-sm">
-          + New Process
+          + New Playbook
         </Link>
       </div>
     </nav>
