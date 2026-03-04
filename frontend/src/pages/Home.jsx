@@ -1,20 +1,23 @@
 import { Link } from 'react-router-dom';
 
-const FEATURES = [
+const STEPS = [
   {
+    num: '01',
     icon: '🎙️',
-    title: 'AI-Guided Interview',
-    desc: 'Describe your task in plain language. The AI asks smart follow-up questions to capture every detail.',
+    title: 'Just talk through it',
+    desc: "Describe your process like you're explaining it to a new colleague. No writing, no templates — just a conversation.",
   },
   {
-    icon: '📋',
-    title: 'Structured Output',
-    desc: 'Automatically converts your explanation into a clean, standardized process document anyone can follow.',
+    num: '02',
+    icon: '⚡',
+    title: 'AI fills in the gaps',
+    desc: 'Playbook asks the right follow-up questions — what triggers it, what tools you use, what can go wrong — until the picture is complete.',
   },
   {
-    icon: '📂',
-    title: 'Save & Share',
-    desc: 'Save all your documented workflows in one place. Build an organizational knowledge base over time.',
+    num: '03',
+    icon: '📄',
+    title: 'Instant documentation',
+    desc: 'Your conversation becomes a clean, structured process doc with steps, decisions, and time estimates. Ready to share in seconds.',
   },
 ];
 
@@ -22,35 +25,39 @@ export default function Home() {
   return (
     <>
       <section className="home-hero">
+        <div className="hero-label">✦ AI-powered process capture</div>
         <h1>
-          Turn tribal knowledge into<br />
-          <span>structured workflows</span>
+          Stop losing knowledge<br />
+          when <em>people leave</em>
         </h1>
         <p>
-          ProcessCapture uses an AI interviewer to guide employees through describing
-          how they work — then instantly converts it into a clear, repeatable process
-          document that anyone on your team can understand.
+          Playbook turns how your team works into structured, shareable documentation —
+          automatically. Just describe your process. We handle the rest.
         </p>
         <div className="home-actions">
           <Link to="/create" className="btn btn-primary btn-lg">
-            Document a Process
+            Start documenting →
           </Link>
           <Link to="/dashboard" className="btn btn-secondary btn-lg">
-            View Saved Workflows
+            My library
           </Link>
         </div>
       </section>
 
-      <section className="home-features">
-        <h2>How it works</h2>
-        <div className="features-grid">
-          {FEATURES.map((f) => (
-            <div key={f.title} className="feature-card">
-              <div className="feature-icon">{f.icon}</div>
-              <h3>{f.title}</h3>
-              <p>{f.desc}</p>
-            </div>
-          ))}
+      <section className="home-how">
+        <div className="container">
+          <div className="section-label">How it works</div>
+          <h2>From your head to a playbook<br />in three steps</h2>
+          <div className="steps-cards">
+            {STEPS.map((s) => (
+              <div key={s.num} className="step-card">
+                <div className="step-card-num">Step {s.num}</div>
+                <div className="step-card-icon">{s.icon}</div>
+                <h3>{s.title}</h3>
+                <p>{s.desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
     </>
