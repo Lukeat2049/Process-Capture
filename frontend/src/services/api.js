@@ -42,6 +42,13 @@ export const api = {
     });
   },
 
+  updateWorkflow(id, data) {
+    return request(`/workflows/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
   deleteWorkflow(id) {
     return request(`/workflows/${id}`, { method: 'DELETE' });
   },
