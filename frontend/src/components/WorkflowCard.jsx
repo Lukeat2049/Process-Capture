@@ -18,25 +18,28 @@ export default function WorkflowCard({ workflow, onDelete }) {
 
   return (
     <div className="workflow-card" onClick={() => navigate(`/workflow/${workflow.id}`)}>
-      <div className="workflow-card-title">{workflow.title}</div>
-      <div className="workflow-card-date">{formatDate(workflow.created_at)}</div>
-      {workflow.purpose && (
-        <div className="workflow-card-purpose">{workflow.purpose}</div>
-      )}
-      <div className="workflow-card-footer">
-        <span className="step-count-badge">
-          {workflow.steps?.length ?? 0} steps
-        </span>
-        <div className="card-actions">
-          <button
-            className="btn btn-secondary btn-sm"
-            onClick={e => { e.stopPropagation(); navigate(`/workflow/${workflow.id}`); }}
-          >
-            View
-          </button>
-          <button className="btn btn-danger btn-sm" onClick={handleDelete}>
-            Delete
-          </button>
+      <div className="workflow-card-strip" />
+      <div className="workflow-card-body">
+        <div className="workflow-card-title">{workflow.title}</div>
+        <div className="workflow-card-date">{formatDate(workflow.created_at)}</div>
+        {workflow.purpose && (
+          <div className="workflow-card-purpose">{workflow.purpose}</div>
+        )}
+        <div className="workflow-card-footer">
+          <span className="step-count-badge">
+            {workflow.steps?.length ?? 0} steps
+          </span>
+          <div className="card-actions">
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={e => { e.stopPropagation(); navigate(`/workflow/${workflow.id}`); }}
+            >
+              View
+            </button>
+            <button className="btn btn-danger btn-sm" onClick={handleDelete}>
+              Delete
+            </button>
+          </div>
         </div>
       </div>
     </div>
