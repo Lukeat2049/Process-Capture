@@ -71,6 +71,42 @@ router.post('/', (req, res) => {
   }
 });
 
+// PUT /api/workflows/:id — update
+router.put('/:id', (req, res) => {
+  try {
+    const {
+      title, purpose, trigger_event,
+      tools_used, steps, decision_points,
+      common_issues, estimated_time,
+    } = req.body;
+
+    const info = db.prepare(`
+      UPDATE workflows SET
+        title=?, purpose=?, trigger_event=?,
+        tools_used=?, steps=?, decision_points=?,
+        common_issues=?, estimated_time=?,
+        updated_at=CURRENT_TIMESTAMP
+      WHERE id=?
+    `).run(
+      title,
+      purpose       || null,
+      trigger_event || null,
+      JSON.stringify(tools_used      || []),
+      JSON.stringify(steps           || []),
+      JSON.stringify(decision_points || []),
+      JSON.stringify(common_issues   || []),
+      estimated_time || null,
+      req.params.id,
+    );
+
+    if (info.changes === 0) return res.status(404).json({ error: 'Workflow not found' });
+    const updated = db.prepare('SELECT * FROM workflows WHERE id = ?').get(req.params.id);
+    res.json(parseWorkflow(updated));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // DELETE /api/workflows/:id
 router.delete('/:id', (req, res) => {
   try {
