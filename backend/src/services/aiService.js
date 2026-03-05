@@ -127,7 +127,7 @@ export async function chat(messages) {
   const currentMessage = messages[messages.length - 1].content;
 
   const model = genAI.getGenerativeModel({
-    model: 'gemini-1.5-flash',
+    model: 'gemini-2.0-flash',
     systemInstruction: INTERVIEWER_SYSTEM_PROMPT,
     generationConfig: { maxOutputTokens: 400, temperature: 0.7 },
   });
@@ -145,7 +145,7 @@ export async function generateWorkflow(messages) {
     .join('\n\n');
 
   const model = genAI.getGenerativeModel({
-    model: 'gemini-1.5-flash',
+    model: 'gemini-2.0-flash',
     systemInstruction: GENERATOR_SYSTEM_PROMPT,
     generationConfig: {
       responseMimeType: 'application/json',
