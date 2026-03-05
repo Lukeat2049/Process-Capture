@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../services/api.js';
+import WorkflowSummary from '../components/WorkflowSummary.jsx';
 
 function formatDate(iso) {
   return new Date(iso).toLocaleDateString('en-US', {
@@ -8,28 +9,42 @@ function formatDate(iso) {
   });
 }
 
-function Section({ label, children }) {
-  return (
-    <div className="wf-view-section">
-      <h3>{label}</h3>
-      {children}
-    </div>
-  );
-}
-
 export default function WorkflowView() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [workflow, setWorkflow] = useState(null);
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState('');
+
+  const [workflow, setWorkflow]   = useState(null);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState('');
+  const [editing, setEditing]     = useState(false);
+  const [draft, setDraft]         = useState(null);
+  const [isSaving, setIsSaving]   = useState(false);
 
   useEffect(() => {
     api.getWorkflow(id)
-      .then(setWorkflow)
+      .then(w => { setWorkflow(w); setDraft(w); })
       .catch(() => setError('Workflow not found.'))
       .finally(() => setLoading(false));
   }, [id]);
+
+  async function handleSave() {
+    setIsSaving(true);
+    try {
+      const updated = await api.updateWorkflow(id, draft);
+      setWorkflow(updated);
+      setDraft(updated);
+      setEditing(false);
+    } catch {
+      setError('Failed to save changes.');
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  function handleCancel() {
+    setDraft(workflow);
+    setEditing(false);
+  }
 
   async function handleDelete() {
     if (!window.confirm(`Delete "${workflow.title}"? This cannot be undone.`)) return;
@@ -47,97 +62,56 @@ export default function WorkflowView() {
 
   return (
     <div className="workflow-view">
-      <div className="workflow-view-back">
+      <div className="workflow-view-back" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Link to="/dashboard" className="btn btn-secondary btn-sm">
-          ← Back to Dashboard
+          ← Back
         </Link>
+        {!editing ? (
+          <div style={{ display: 'flex', gap: '.5rem' }}>
+            <button className="btn btn-secondary btn-sm" onClick={() => setEditing(true)}>
+              Edit
+            </button>
+            <button className="btn btn-danger btn-sm" onClick={handleDelete}>
+              Delete
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', gap: '.5rem' }}>
+            <button className="btn btn-secondary btn-sm" onClick={handleCancel}>
+              Cancel
+            </button>
+            <button className="btn btn-primary btn-sm" onClick={handleSave} disabled={isSaving}>
+              {isSaving ? 'Saving…' : 'Save changes'}
+            </button>
+          </div>
+        )}
       </div>
 
-      <div className="workflow-view-header">
-        <h1>{workflow.title}</h1>
-        <div className="workflow-view-meta">
+      {!editing && (
+        <div className="workflow-view-meta" style={{ marginBottom: '2rem', marginTop: '.5rem' }}>
           Documented on {formatDate(workflow.created_at)}
         </div>
+      )}
+
+      {error && <div className="error-banner">{error}</div>}
+
+      <div style={{ background: editing ? 'var(--surface)' : 'transparent', borderRadius: editing ? 'var(--radius-lg)' : 0, padding: editing ? '1.5rem' : 0, border: editing ? '1px solid var(--border)' : 'none' }}>
+        <WorkflowSummary
+          workflow={editing ? draft : workflow}
+          titleValue={editing ? draft.title : workflow.title}
+          onTitleChange={v => setDraft(d => ({ ...d, title: v }))}
+          editable={editing}
+          onUpdate={updated => setDraft(updated)}
+        />
       </div>
 
-      {workflow.purpose && (
-        <Section label="Purpose">
-          <p style={{ fontSize: '.9rem', lineHeight: 1.65 }}>{workflow.purpose}</p>
-        </Section>
+      {!editing && (
+        <div className="workflow-actions">
+          <Link to="/create" className="btn btn-primary">
+            + Document Another Process
+          </Link>
+        </div>
       )}
-
-      {workflow.trigger_event && (
-        <Section label="Trigger">
-          <p style={{ fontSize: '.9rem', lineHeight: 1.65 }}>{workflow.trigger_event}</p>
-        </Section>
-      )}
-
-      {workflow.tools_used?.length > 0 && (
-        <Section label="Tools Used">
-          <div className="tools-wrap">
-            {workflow.tools_used.map((t, i) => (
-              <span key={i} className="tool-badge">{t}</span>
-            ))}
-          </div>
-        </Section>
-      )}
-
-      {workflow.steps?.length > 0 && (
-        <Section label="Step-by-Step Instructions">
-          <div className="steps-list">
-            {workflow.steps.map((step, i) => (
-              <div key={i} className="step-item">
-                <div className="step-num">{step.number ?? i + 1}</div>
-                <div className="step-body">
-                  <div className="step-action">{step.action}</div>
-                  {step.details && <div className="step-details">{step.details}</div>}
-                </div>
-              </div>
-            ))}
-          </div>
-        </Section>
-      )}
-
-      {workflow.decision_points?.length > 0 && (
-        <Section label="Decision Points">
-          <div className="bullet-list">
-            {workflow.decision_points.map((dp, i) => (
-              <div key={i} className="bullet-item">
-                <span className="bullet-dot">&#9670;</span>
-                <span style={{ fontSize: '.9rem' }}>{dp}</span>
-              </div>
-            ))}
-          </div>
-        </Section>
-      )}
-
-      {workflow.common_issues?.length > 0 && (
-        <Section label="Common Issues">
-          <div className="bullet-list">
-            {workflow.common_issues.map((issue, i) => (
-              <div key={i} className="bullet-item">
-                <span className="bullet-dot">&#9670;</span>
-                <span style={{ fontSize: '.9rem' }}>{issue}</span>
-              </div>
-            ))}
-          </div>
-        </Section>
-      )}
-
-      {workflow.estimated_time && (
-        <Section label="Estimated Time">
-          <span className="time-badge">{workflow.estimated_time}</span>
-        </Section>
-      )}
-
-      <div className="workflow-actions">
-        <button className="btn btn-danger" onClick={handleDelete}>
-          Delete Workflow
-        </button>
-        <Link to="/create" className="btn btn-primary">
-          + Document Another Process
-        </Link>
-      </div>
     </div>
   );
 }
