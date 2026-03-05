@@ -1,10 +1,10 @@
-import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
 dotenv.config();
 
-const USE_MOCK = process.env.MOCK_AI === 'true' || !process.env.OPENAI_API_KEY;
+const USE_MOCK = process.env.MOCK_AI === 'true' || !process.env.GEMINI_API_KEY;
 
-const openai = USE_MOCK ? null : new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const genAI = USE_MOCK ? null : new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // ─── System Prompts ───────────────────────────────────────────────────────────
 
@@ -31,7 +31,7 @@ Keep questions under 3 sentences. If an answer is vague, ask for clarification b
 
 const GENERATOR_SYSTEM_PROMPT = `You are a technical writer specializing in process documentation.
 Given an interview transcript, produce a structured workflow document.
-Return ONLY valid JSON — no markdown, no explanation.
+Return ONLY valid JSON — no markdown, no explanation, no code fences.
 
 Required structure:
 {
@@ -66,7 +66,8 @@ const MOCK_QUESTIONS = [
   "And what happens after that? Walk me through the next steps in sequence — feel free to describe several at once.",
   "Are there any decision points in this process — moments where you choose between different paths depending on a condition? For example: \"If the data is missing, I do X; otherwise I do Y.\"",
   "What could go wrong during this process, and how do you handle those situations when they arise?",
-  "Last one: what does the completed output or result look like, and how do you know the task is fully done? Also — roughly how long does the whole process take? [READY_TO_GENERATE]",
+  "Last one: what does the completed output or result look like, and how do you know the task is fully done? Also — roughly how long does the whole process take?",
+  "That's everything I need — thank you! I have a clear picture of the full process from start to finish. [READY_TO_GENERATE]",
 ];
 
 function getMockResponse(messages) {
@@ -116,45 +117,47 @@ function getMockWorkflow(messages) {
 // ─── Exported functions ───────────────────────────────────────────────────────
 
 export async function chat(messages) {
-  if (USE_MOCK) {
-    return getMockResponse(messages);
-  }
+  if (USE_MOCK) return getMockResponse(messages);
 
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
-    messages: [
-      { role: 'system', content: INTERVIEWER_SYSTEM_PROMPT },
-      ...messages,
-    ],
-    temperature: 0.7,
-    max_tokens: 350,
+  // Split history from the current message
+  const history = messages.slice(0, -1).map(m => ({
+    role: m.role === 'assistant' ? 'model' : 'user',
+    parts: [{ text: m.content }],
+  }));
+  const currentMessage = messages[messages.length - 1].content;
+
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-1.5-flash',
+    systemInstruction: INTERVIEWER_SYSTEM_PROMPT,
+    generationConfig: { maxOutputTokens: 400, temperature: 0.7 },
   });
 
-  return response.choices[0].message.content;
+  const session = model.startChat({ history });
+  const result = await session.sendMessage(currentMessage);
+  return result.response.text();
 }
 
 export async function generateWorkflow(messages) {
-  if (USE_MOCK) {
-    return getMockWorkflow(messages);
-  }
+  if (USE_MOCK) return getMockWorkflow(messages);
 
   const transcript = messages
     .map(m => `${m.role === 'user' ? 'Employee' : 'Interviewer'}: ${m.content}`)
     .join('\n\n');
 
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
-    messages: [
-      { role: 'system', content: GENERATOR_SYSTEM_PROMPT },
-      {
-        role: 'user',
-        content: `Interview transcript:\n\n${transcript}\n\nGenerate the structured workflow JSON now.`,
-      },
-    ],
-    temperature: 0.2,
-    max_tokens: 1800,
-    response_format: { type: 'json_object' },
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-1.5-flash',
+    systemInstruction: GENERATOR_SYSTEM_PROMPT,
+    generationConfig: {
+      responseMimeType: 'application/json',
+      temperature: 0.2,
+      maxOutputTokens: 2000,
+    },
   });
 
-  return JSON.parse(response.choices[0].message.content);
+  const result = await model.generateContent(
+    `Interview transcript:\n\n${transcript}\n\nGenerate the structured workflow JSON now.`
+  );
+
+  const text = result.response.text().trim();
+  return JSON.parse(text);
 }
